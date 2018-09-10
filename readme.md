@@ -6,4 +6,3 @@
     psql > CREATE DATABASE github;
     psql > CREATE USER github_user WITH password 'password';
     psql > GRANT ALL privileges ON DATABASE github TO github_user;
-    psql > ALTER USER github_user CREATEDB;
