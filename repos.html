@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Repository{% endblock %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+        Hala {{ user.username }}!
+        <p><a href="{% url 'logout' %}">logout</a></p>
+        <p><a href="#" id="saveData">Save</a></p>
+    {% else %}
+        <p>You are not logged in</p>
+        <a href="{% url 'login' %}">login</a>
+        <p>Signing up</p>
+        <a href="{% url 'signup' %}">signup</a>
+    {% endif %}
+    <script>
+        $(document).ready(function () {
+            let contributer_statistic = [];
+            let repoInfo = {};
+            let all_contrib = [];
+            $("#saveData").on('click', function(){
+                let url = "http://127.0.0.1:8000/save-search-data/";
+                $.ajax({
+                    'url': url,
+                    'type': 'POST',
+                    'data': {
+                        'contributer_statistic': JSON.stringify(contributer_statistic),
+                        'repo_info': JSON.stringify(repoInfo),
+                        'all_contrib': JSON.stringify(all_contrib),
+                    },
+                    'success': function (contribData) {
+                        alert('Successfully saved.')
+                    }
+                });
+            });
+
+
+            let keyWd, url, eventUrl, txt, x;
+            keyWd = window.location.search;
+            keyWd = keyWd.split('=')[1];
+            url = "https://api.github.com/repos/" + keyWd;
+            $.ajax({
+                'url': url,
+                'type': 'GET',
+                'success': function (data) {
+                    eventUrl = data.events_url + "?page=1&per_page=100"
+                    $.ajax({
+                        'url': eventUrl,
+                        'type': 'GET',
+                        'success': function (eventData) {
+                            if (eventData[0]){
+                                repoInfo = eventData[0].repo
+                            }
+                            let contributorsUrl = url+'/contributors';
+                            $.ajax({
+                                'url': contributorsUrl,
+                                'type': 'GET',
+                                'success': function (contribData) {
+                                    all_contrib = contribData;
+                                    txt += "<table border='1'>"
+                                    for (let x in contribData) {
+
+                                        txt += "<tr><td>" + contribData[x]['login']+"</td></tr>";
+                                    }
+                                    txt += "</table>"
+                                    document.getElementById("demo").innerHTML = txt;
+                                }
+                                });
+                            let actors = {};
+                            for (let i = 0; i < eventData.length; i++) {
+                                if (actors[eventData[i].actor.login]) {
+                                    actors[eventData[i].actor.login] = {
+                                        'id': eventData[i].actor.id,
+                                        'login': eventData[i].actor.login,
+                                        'actions_count': actors[eventData[i].actor.login]['actions_count'] + 1,
+                                        'percent': ((actors[eventData[i].actor.login]['actions_count'] + 1) * 100) / eventData.length
+                                    }
+                                } else {
+                                    actors[eventData[i].actor.login] = {
+                                        'id': eventData[i].actor.id,
+                                        'login': eventData[i].actor.login,
+                                        'actions_count': 1,
+                                        'percent': 100 / eventData.length
+                                    }
+                                }
+                            }
+                            contributer_statistic = actors;
+                            txt += "<table border='1'>"
+                            for (let x in actors) {
+
+                                    txt += "<tr><td>" + actors[x]['login'] + " worked on " + actors[x]['percent'] + " percents</td></tr>";
+                            }
+                            txt += "</table>"
+                            document.getElementById("demo").innerHTML = txt;
+
+                        }
+                    })
+                }
+            })
+            ;
+
+        })
+        ;
+
+    </script>
+    <p id="demo"></p>
+{% endblock %}

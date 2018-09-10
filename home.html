@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+        Vamos {{ user.username }}!
+        <p><a href="{% url 'logout' %}">logout</a></p>
+    {% else %}
+        <p>You are not logged in</p>
+        <a href="{% url 'login' %}">login</a>
+        <p>Signing up</p>
+        <a href="{% url 'signup' %}">signup</a>
+    {% endif %}
+
+    <input type="text" id="q">
+    <button type="button" onclick=searchFunc()>Search</button>
+
+    <script>
+        function searchFunc() {
+            let myObj, x, txt = "", keyWd, url;
+            keyWd = document.getElementById("q").value;
+            url = "https://api.github.com/search/repositories?q=" + keyWd;
+            $.ajax({
+                'url': url,
+                'type': 'GET',
+                'success': function (myObj) {
+                    txt += "<table border='1'>"
+                    for (x in myObj['items']) {
+                        txt += "<tr><td><a href='/repos?repository=" + myObj['items'][x].full_name + "'>"
+                            + myObj['items'][x].name + "</a></td></tr>";
+                    }
+                    txt += "</table>"
+                    document.getElementById("demo").innerHTML = txt;
+                }
+                })
+
+        }
+    </script>
+    <p id="demo"></p>
+{% endblock %}
+
